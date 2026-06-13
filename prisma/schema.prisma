@@ -1,0 +1,199 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  SUPER_ADMIN @map("superAdmin")
+  ADMIN       @map("admin")
+  USER        @map("user")
+}
+
+model User {
+  id            String          @id @default(cuid())
+  name          String?
+  email         String?         @unique
+  username      String          @unique
+  password      String
+  emailVerified DateTime?
+  image         String?
+  role          UserRole?       @default(USER)
+  accounts      Account[]
+  sessions      Session[]
+  Authenticator Authenticator[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+// Optional for WebAuthn support
+model Authenticator {
+  credentialID         String  @unique
+  userId               String
+  providerAccountId    String
+  credentialPublicKey  String
+  counter              Int
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, credentialID])
+}
+
+enum MessageRole {
+  USER      @map("user")
+  ASSISTANT @map("assistant")
+}
+
+enum IntentLabel {
+  admission
+  inquiry
+  other
+}
+
+model Chat {
+  id           String      @id @default(cuid())
+  sessionId    String      @unique
+  leadCaptured Boolean     @default(false)
+  intent       IntentLabel @default(other)
+  lead         Lead?
+
+  messages Message[]
+
+  createdAt DateTime @default(now())
+}
+
+model Message {
+  id      String      @id @default(cuid())
+  role    MessageRole @default(ASSISTANT)
+  content String
+
+  chatId String
+  chat   Chat   @relation(fields: [chatId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Information {
+  id      String             @id @default(cuid())
+  title   String
+  content String
+  chunks  InformationChunk[]
+
+  createdAt DateTime @default(now())
+}
+
+model InformationChunk {
+  id      String @id @default(cuid())
+  content String
+
+  informationId String
+  information   Information @relation(fields: [informationId], references: [id], onDelete: Cascade)
+
+  embedding Unsupported("vector(1536)")?
+  createdAt DateTime                     @default(now())
+}
+
+// Prisma Model matching "Gulliver Chatbot - Engineering Build Brief_2.docx" requirements
+
+model Lead {
+  id        String      @id @default(uuid())
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  intent    IntentLabel @default(other)
+
+  // 1. Mandatory Lead Capture Fields (RFI)
+  firstName String? // Nullable to capture partial conversations
+  lastName  String?
+  email     String?
+  state     String? // Evaluated against blocked states (MN, DC, AL, AR, RI, NY, NC, ND)
+  bestPhone String?
+  country   String  @default("US") // Defaults to US if state is provided
+
+  programName String? // Program descriptive title
+
+  // 3. Qualifier Questions & Lead Scoring Signals
+  isAgeConfirmed Boolean @default(false) // Must be 18 or older
+  educationLevel String? // Prospect's education level
+
+  // 4. Applicant Survey Data (Enums handled below for data integrity)
+  completionTimeline TimelineOption?
+  motivation         MotivationOption[] // Stored as an array to handle multi-select goals
+  isFieldRelated     FieldRelevance?
+
+  chatId String @unique
+  chat   Chat   @relation(fields: [chatId], references: [id])
+
+  @@index([email])
+  @@index([state])
+}
+
+// --- Enums Derived Verbatim from CCU Applicant Survey Options ---
+
+enum TimelineOption {
+  YEARS_1_2 // "1-2 years"
+  YEARS_2_3 // "2-3 years"
+  YEARS_3_4 // "3-4 years"
+  YEARS_4_5 // "4-5 years"
+  YEARS_5_10 // "5-10 years (Ed.D. only)"
+}
+
+enum MotivationOption {
+  PAY_INCREASE_PROMOTION
+  PERSONAL_ACHIEVEMENT
+  LIFELONG_LEARNING
+  EDUCATIONAL_GAIN_DEGREE_COMPLETION
+  INDUSTRY_COMPETITION
+  OTHER
+}
+
+enum FieldRelevance {
+  YES
+  NO
+  OTHER
+}

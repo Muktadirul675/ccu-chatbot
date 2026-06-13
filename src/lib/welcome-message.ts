@@ -1,0 +1,1 @@
+export const welcome_message = "Hi, I'm Gulliver! How may I help you?"
