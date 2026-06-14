@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "worker:lead" : "tsx ./src/workers/lead.worker.ts"
   },
   "dependencies": {
     "@ai-sdk/groq": "^3.0.39",
@@ -16,9 +17,9 @@
     "ai": "^6.0.196",
     "axios": "^1.17.0",
     "bcrypt": "^6.0.0",
-    "bullmq": "^5.78.0",
+    "bullmq": "^5.78.1",
     "dotenv": "^17.4.2",
-    "ioredis": "^5.11.0",
+    "ioredis": "^5.11.1",
     "jina-ai-provider": "^1.0.0",
     "next": "16.2.7",
     "next-auth": "^5.0.0-beta.31",
@@ -40,6 +41,7 @@
     "@types/react-dom": "^19",
     "prisma": "^7.8.0",
     "tailwindcss": "^4",
+    "tsx": "^4.22.4",
     "typescript": "^5"
   }
 }

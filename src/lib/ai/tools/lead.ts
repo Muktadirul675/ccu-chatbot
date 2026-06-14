@@ -1,17 +1,6 @@
 import { z } from "zod";
 import { tool } from "ai";
-import { prisma } from "@/lib/prisma";
-
-const BLOCKED_STATES = new Set([
-  "MN",
-  "DC",
-  "AL",
-  "AR",
-  "RI",
-  "NY",
-  "NC",
-  "ND",
-]);
+import { leadQueue } from "@/queues/lead";
 
 const leadParametersSchema = z.object({
   chatId: z.string(),
@@ -29,7 +18,13 @@ const leadParametersSchema = z.object({
   educationLevel: z.string().optional(),
 
   completionTimeline: z
-    .enum(["YEARS_1_2", "YEARS_2_3", "YEARS_3_4", "YEARS_4_5", "YEARS_5_10"])
+    .enum([
+      "YEARS_1_2",
+      "YEARS_2_3",
+      "YEARS_3_4",
+      "YEARS_4_5",
+      "YEARS_5_10",
+    ])
     .optional(),
 
   motivation: z
@@ -54,102 +49,33 @@ export const captureOrUpdateLead = tool({
 
   inputSchema: leadParametersSchema,
 
-  execute: async ({
-    chatId,
-    state,
-    programName,
-    firstName,
-    lastName,
-    email,
-    bestPhone,
-    isAgeConfirmed,
-    educationLevel,
-    completionTimeline,
-    motivation,
-    isFieldRelated,
-  }) => {
-    let isDisqualified = false;
-    let eligibilityReason = "Eligible";
-
-    const normalizedState = state?.toUpperCase();
-
-    // Blocked state logic
-    if (normalizedState && BLOCKED_STATES.has(normalizedState)) {
-      isDisqualified = true;
-      eligibilityReason = `Disqualified: State ${normalizedState} is restricted from enrollment.`;
-    }
-
-    await prisma.chat.update({
-      where: { id: chatId },
-      data: { leadCaptured: true }
-    })
-
-    const finalCountry = normalizedState ? "US" : undefined;
-
+  execute: async (input) => {
     try {
-      const lead = await prisma.lead.upsert({
-        where: { chatId },
-
-        update: {
-          ...(firstName && { firstName }),
-          ...(lastName && { lastName }),
-          ...(email && { email }),
-          ...(bestPhone && { bestPhone }),
-
-          ...(typeof isAgeConfirmed === "boolean" && {
-            isAgeConfirmed,
-          }),
-
-          ...(educationLevel && { educationLevel }),
-          ...(completionTimeline && { completionTimeline }),
-          ...(motivation && { motivation }),
-          ...(isFieldRelated && { isFieldRelated }),
-
-          ...(normalizedState && { state: normalizedState }),
-          ...(programName && { programName }),
-          ...(finalCountry && { country: finalCountry }),
-        },
-
-        create: {
-          chatId,
-
-          ...(firstName && { firstName }),
-          ...(lastName && { lastName }),
-          ...(email && { email }),
-          ...(bestPhone && { bestPhone }),
-
-          ...(typeof isAgeConfirmed === "boolean" && {
-            isAgeConfirmed,
-          }),
-
-          ...(educationLevel && { educationLevel }),
-          ...(completionTimeline && { completionTimeline }),
-          ...(motivation && { motivation }),
-          ...(isFieldRelated && { isFieldRelated }),
-
-          ...(normalizedState && { state: normalizedState }),
-          ...(programName && { programName }),
-          ...(finalCountry && { country: finalCountry }),
-        },
-      });
+      await leadQueue.add(
+        "capture-lead",
+        input,
+        {
+          attempts: 5,
+          backoff: {
+            type: "exponential",
+            delay: 3000,
+          },
+          removeOnComplete: 1000,
+          removeOnFail: 1000,
+        }
+      );
 
       return {
         success: true,
-        leadId: lead.id,
-        isDisqualified,
-        eligibilityReason,
-        message: isDisqualified
-          ? "Lead processed with restrictions."
-          : "Lead synced successfully.",
+        message: "Lead captured successfully.",
       };
     } catch (error: any) {
+      console.error("Failed to queue lead:", error);
+
       return {
         success: false,
-        leadId: null,
-        isDisqualified: false,
-        eligibilityReason: "Error encountered during operation",
-        message: "Failed to parse database lead operation pipeline.",
-        error: error?.message || "Unknown database error",
+        message: "Failed to capture lead.",
+        error: error?.message ?? "Unknown error",
       };
     }
   },
