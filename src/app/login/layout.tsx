@@ -7,3 +7,4 @@ export default async function LoginLayout({ children }: { children: ReactNode })
     if(session) return redirect("/dashboard")
     return children;
 }
+

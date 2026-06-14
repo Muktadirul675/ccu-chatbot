@@ -9,13 +9,55 @@ import toast from "react-hot-toast";
 import { BiSolidBookContent } from "react-icons/bi";
 import { LuLoader, LuUpload } from "react-icons/lu";
 import { MdOutlineTitle } from "react-icons/md";
+import { LuDownload, LuLink } from "react-icons/lu";
 
 export default function AddInfoPage() {
     const [title, setTitle] = useState("")
     const [content, setContent] = useState("")
     const [loading, setLoading] = useState(false);
+    const [url, setUrl] = useState("")
+    const [extracting, setExtracting] = useState(false)
     const router = useRouter()
+    async function handleExtract() {
+        if (!url.trim()) {
+            toast.error("Please enter a URL first")
+            return
+        }
 
+        try {
+            setExtracting(true)
+
+            const res = await fetch(
+                `/api/information/url-extract?url=${encodeURIComponent(url)}`,
+                {
+                    method: "GET",
+                }
+            )
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                throw new Error(
+                    data?.message || "Failed to extract content from URL"
+                )
+            }
+
+            if (data?.content) {
+                setContent(data.content)
+                toast.success("Content extracted successfully")
+            } else {
+                toast.error("No content returned from this URL")
+            }
+        } catch (error) {
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : "Something went wrong while extracting"
+            )
+        } finally {
+            setExtracting(false)
+        }
+    }
     async function handleSubmit(e: FormEvent) {
         e.preventDefault()
         if (!title.trim() || !content.trim()) {
@@ -59,17 +101,58 @@ export default function AddInfoPage() {
                 </label>
                 <input type="text" className="rounded bg-white px-2 py-1 border border-gray-300 focus:outline-none" placeholder="Title goes here..." name="title" value={title} onChange={(e) => setTitle(e.target.value)} />
             </div>
+            <div className="my-1 flex flex-col gap-2">
+                <label
+                    htmlFor="url"
+                    className="font-semibold text-sm flex items-center gap-2 text-slate-800"
+                >
+                    <LuLink />
+                    Source URL
+                </label>
+
+                <div className="flex gap-2">
+                    <input
+                        type="url"
+                        name="url"
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                        placeholder="https://example.com"
+                        disabled={loading || extracting}
+                        className="flex-1 rounded bg-white px-2 py-1 border border-gray-300 focus:outline-none"
+                    />
+
+                    <button
+                        type="button"
+                        onClick={handleExtract}
+                        disabled={!url || loading || extracting}
+                        className="px-3 py-1 border border-gray-300 rounded flex items-center gap-2 disabled:opacity-50"
+                    >
+                        {extracting ? (
+                            <LuLoader className="animate-spin" />
+                        ) : (
+                            <>
+                                <LuDownload />
+                                Extract
+                            </>
+                        )}
+                    </button>
+                </div>
+
+                <span className="text-xs text-gray-500">
+                    Optional. Extract content from a webpage.
+                </span>
+            </div>
             <div className="mt-3 flex flex-col gap-2">
                 <label htmlFor="content" className="font-semibold text-sm flex items-center gap-2 text-slate-800">
                     <BiSolidBookContent /> Content
                 </label>
-                <textarea rows={10} className="rounded bg-white px-2 py-1 border border-gray-300 focus:outline-none" name="content" placeholder="Write your content..." value={content} onChange={(e) => setContent(e.target.value)} />
+                <textarea disabled={loading || extracting} rows={10} className="rounded bg-white px-2 py-1 border border-gray-300 focus:outline-none" name="content" placeholder="Write your content..." value={content} onChange={(e) => setContent(e.target.value)} />
             </div>
             <hr className="mt-5 border-gray-300" />
             <div className="flex justify-end pt-5">
                 <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || extracting}
                     className="flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-primary hover:bg-secondary rounded-md shadow-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed min-w-30"
                 >
                     {loading ? (

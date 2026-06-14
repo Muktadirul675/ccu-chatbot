@@ -1,4 +1,5 @@
 import { auth, signOut } from "@/auth";
+import { UserRole } from "@/generated/prisma/enums";
 import { isAdmin, isSuperAdmin } from "@/services/user";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -39,9 +40,9 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     const session = await auth()
     if(!session) redirect("/login")
     if(!session.user?.name) redirect("/login")
-    if(!(await isAdmin(session.user.name))) redirect("/login")
-        
-    const superAdmin = await isSuperAdmin(session.user.name)
+    const admin = (session.user.role === UserRole.SUPER_ADMIN) || (session.user.role === UserRole.ADMIN)
+    if(!admin) redirect("/login")
+    const superAdmin = (session.user.role === UserRole.SUPER_ADMIN)
 
     return <div className="flex items-start">
         <Toaster/>

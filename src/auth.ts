@@ -20,10 +20,27 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             const password = credentials.password
             const verified = await verifyUser(`${username}`, `${password}`)
             if (verified) {
-                user.name = username as string;
+                user.name = verified.username as string;
+                user.id = verified.id
+                user.role = `${verified.role}`
                 return user;
             }
             throw new Error("Invalid Credentials")
-        }
+        },
     })],
+    session: { strategy: 'jwt' },
+    callbacks: {
+        async jwt({ token, user }) {
+            if (user) {
+                token.role = user.role
+            }
+            return token
+        },
+        async session({ session, token }) {
+            if (session.user) {
+                session.user.role = token.role as string;
+            }
+            return session;
+        },
+    }
 })

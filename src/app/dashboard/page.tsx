@@ -1,3 +1,4 @@
+import { auth } from "@/auth"
 import ChatSessionTable from "@/components/tables/ChatsTable"
 import CompactLeadTable from "@/components/tables/CompactLeadTable"
 import { getAnalytics } from "@/services/analytics"
@@ -10,6 +11,7 @@ export default async function Page(){
         getRecentLeads(),
         getRecentChats()
     ])
+    const sessoin = await auth()
     return <div className="p-3">
         <h3 className="mb-2 font-semibold text-2xl">
             Dashboard
