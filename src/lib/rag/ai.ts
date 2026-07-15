@@ -1,4 +1,5 @@
 import { groq } from "@ai-sdk/groq";
+import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
 
 const GENERATE_CHUNK_SYSTEM_PROMPT = `
@@ -11,7 +12,7 @@ OUTPUT FORMAT:
 
 export async function generateChunks(prompt: string): Promise<string[]> {
     const { text } = await generateText({
-        model: groq("openai/gpt-oss-120b"),
+        model: openai("gpt-4o"),
         prompt: `PARAGRAPH: ${prompt}`,
         system: GENERATE_CHUNK_SYSTEM_PROMPT
     })
