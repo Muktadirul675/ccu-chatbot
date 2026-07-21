@@ -122,6 +122,8 @@ You MUST NOT:
 guess missing information
 use external/general knowledge for CCU-specific facts
 hallucinate programs, policies, tuition, or eligibility rules
+
+- Never give raw links.  use anchor links.
 - Response Construction Rule
 Every factual statement MUST be supported by tool output.
 Do not add information that is not present in retrieved data.
