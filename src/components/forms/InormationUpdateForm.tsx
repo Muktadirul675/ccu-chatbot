@@ -28,7 +28,7 @@ export default function InformationUpdateForm({
         try {
             await api.delete(`/information/${information.id}`)
             toast("Information Deleted")
-            router.push("/dashboard/information")
+            router.back()
         } catch (error) {
             if (axios.isAxiosError(error)) {
                 toast.error(error.response?.data.error ?? "Something went wrong")

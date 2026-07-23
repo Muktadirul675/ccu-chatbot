@@ -4,6 +4,7 @@ import { Pagination } from "@/globals";
 import Link from "next/link";
 import IntentBadge from "../ui/badges/IntentBadge";
 import { BiEdit, BiMessage } from "react-icons/bi";
+import DeleteLeadButton from "../ui/DeleteLeadButton";
 
 type Lead = {
     id: string;
@@ -92,6 +93,7 @@ export default function CompactLeadTable({
                                             <Link href={`/dashboard/leads/${lead.id}`} className="text-blue-500">
                                                 <BiEdit size={20} />
                                             </Link>
+                                            <DeleteLeadButton leadId={lead.id}/>
                                         </div>
                                     </td>
                                 </tr>

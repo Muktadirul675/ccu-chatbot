@@ -13,7 +13,7 @@ export async function getAIStream(chatId: string, messages: ModelMessage[]) {
         model: openai('gpt-5'),
         system: system,
         messages: messages,
-        stopWhen: stepCountIs(5),
+        stopWhen: stepCountIs(8),
         async onFinish({ text }) {
             const role = MessageRole.ASSISTANT;
             await createMessage(chatId, role, text)

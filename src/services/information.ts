@@ -42,21 +42,21 @@ export async function getInformations(
 
     const where = search?.trim()
         ? {
-              OR: [
-                  {
-                      title: {
-                          contains: search,
-                          mode: "insensitive" as const,
-                      },
-                  },
-                  {
-                      content: {
-                          contains: search,
-                          mode: "insensitive" as const,
-                      },
-                  },
-              ],
-          }
+            OR: [
+                {
+                    title: {
+                        contains: search,
+                        mode: "insensitive" as const,
+                    },
+                },
+                {
+                    content: {
+                        contains: search,
+                        mode: "insensitive" as const,
+                    },
+                },
+            ],
+        }
         : {};
 
     const [infos, totalItems] = await Promise.all([
@@ -164,4 +164,10 @@ export async function updateInformation(id: string, title: string, content: stri
 
 export async function deleteInformation(id: string) {
     await prisma.information.delete({ where: { id } })
+}
+
+export async function createInformationFromPdf(informations: { title: string, content: string }[]) {
+    for(const i of informations){
+        await createInformation(i.title, i.content)
+    }
 }

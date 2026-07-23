@@ -168,6 +168,9 @@ export async function getChat(id: string) {
                     role: true,
                     content: true,
                     createdAt: true
+                },
+                orderBy:{
+                    createdAt: 'asc'
                 }
             }
         }
